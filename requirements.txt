@@ -1,1 +1,7 @@
 pydicom
+numpy
+pandas
+skimage
+scipy
+streamlit
+plotly
