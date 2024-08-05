@@ -32,7 +32,7 @@ def process_slice(args):
                 coordinates.append([x_coord, y_coord, z_coord, dose])
     return coordinates
 
-def extract_dose_coordinates(dose_data, ipp, pixel_spacing, grid_frame_offset_vector, min_dose=1, step_size=1):
+def extract_dose_coordinates_parallel(dose_data, ipp, pixel_spacing, grid_frame_offset_vector, min_dose=1, step_size=1):
     vmin = max(round(np.min(dose_data), -1), 1)
     vmax = np.max(dose_data)
     dose_values = np.arange(vmin, vmax, step_size)
@@ -41,6 +41,30 @@ def extract_dose_coordinates(dose_data, ipp, pixel_spacing, grid_frame_offset_ve
     coordinates = [item for sublist in results for item in sublist]
     return coordinates
 
+def extract_dose_coordinates(dose_data, ipp, pixel_spacing, grid_frame_offset_vector, min_dose=1, step_size=1):
+    mask = dose_data >= min_dose
+    coords = np.argwhere(mask)
+    doses = dose_data[mask]
+
+    vmin = max(round(np.min(dose_data), -1), 1)
+    vmax = np.max(dose_data)
+    
+    dose_values = np.arange(vmin, vmax, step_size)
+
+    coordinates = []
+    for z in range(dose_data.shape[0]):
+        z_coord = ipp[2] + grid_frame_offset_vector[z]
+        for dose in dose_values:
+            contours = find_contours(dose_data[z], dose)
+            if len(contours) == 0:
+                continue
+            for coords in contours:
+                for y_index, x_index in coords:
+                    x_coord = ipp[0] + x_index * pixel_spacing[1]
+                    y_coord = ipp[1] + y_index * pixel_spacing[0]
+                    coordinates.append([x_coord, y_coord, z_coord, dose])
+    return coordinates
+    
 def calculate_dgi(dose_coordinates, min_dose, prescript_dose):
     df = pd.DataFrame(dose_coordinates, columns=["x", "y", "z", "dose"]).sort_values(by='dose')
     df = df[df.dose >= min_dose]
