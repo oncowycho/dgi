@@ -8,6 +8,13 @@ import plotly.graph_objects as go
 import base64
 from multiprocessing import Pool
 
+hide_github_icon = """
+#GithubIcon {
+  visibility: hidden;
+}
+"""
+st.markdown(hide_github_icon, unsafe_allow_html=True)
+
 def read_dose_dicom(dicom_file_path):
     ds = pydicom.dcmread(dicom_file_path)
     dose_grid_scaling = ds.DoseGridScaling
