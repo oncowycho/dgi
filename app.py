@@ -8,15 +8,17 @@ import plotly.graph_objects as go
 import base64
 from multiprocessing import Pool
 
-st.markdown(
-    r"""
+st.markdown("""
     <style>
-    .stDeployButton {
-            visibility: hidden;
+        .reportview-container {
+            margin-top: -2em;
         }
+        #MainMenu {visibility: hidden;}
+        .stDeployButton {display:none;}
+        footer {visibility: hidden;}
+        #stDecoration {display:none;}
     </style>
-    """, unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 def read_dose_dicom(dicom_file_path):
     ds = pydicom.dcmread(dicom_file_path)
