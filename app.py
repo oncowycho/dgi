@@ -110,7 +110,7 @@ def get_table_download_link(df):
     return href
 
 # Streamlit UI
-st.title('DICOM Dose Processing')
+st.title('Dose Gradient Curve')
 
 # Inputs
 uploaded_file = st.file_uploader("Choose a DICOM file (optional)", type=["dcm"])
