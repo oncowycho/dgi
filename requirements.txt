@@ -1,7 +1,7 @@
 pydicom
 numpy
 pandas
-skimage
+scikit-image
 scipy
 streamlit
 plotly
