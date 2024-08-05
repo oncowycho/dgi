@@ -3,5 +3,4 @@ numpy
 pandas
 scikit-image
 scipy
-streamlit
 plotly
