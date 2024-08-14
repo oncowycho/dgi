@@ -4,3 +4,4 @@ pandas
 scikit-image
 scipy
 plotly
+loess
