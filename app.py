@@ -184,7 +184,7 @@ if st.button('Process'):
                 fig_ddgi.add_trace(go.Scatter(x=[min_dDGI_point], y=[min_dDGI], mode='markers+text', name='Min dDGI',
                                               marker=dict(color='red'), text=["Min dDGI"], textposition="top center"))
 
-            fig_ddgi.update_layout(title=f'dDGI vs {xidx}', xaxis_title=xidx, yaxis_title='dDGI')
+            fig_ddgi.update_layout(title=f'dDGI vs {xidx}', xaxis_title=xidx+' ()', yaxis_title='DGI (mm)')
             
             st.plotly_chart(fig_ddgi)
 
@@ -192,12 +192,8 @@ if st.button('Process'):
             dgi_parameters = dgi_parameters.dropna()
             fig_cdgi = go.Figure()
             fig_cdgi.add_trace(go.Scatter(x=dgi_parameters[xidx], y=dgi_parameters["cDGI"],
-                                          labels={
-                                              "dDGI": "DGI (mm)",
-                                              "cDGI": "DGI (mm)",
-                                              },
                                           mode='markers', name='cDGI'))
-            fig_cdgi.update_layout(title=f'cDGI vs {xidx}', xaxis_title=xidx, yaxis_title='cDGI')
+            fig_cdgi.update_layout(title=f'cDGI vs {xidx}', xaxis_title=xidx+' ()', yaxis_title='DGI (mm)')
 
             xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["cDGI"].values, frac=.2)
             fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression'))
