@@ -131,6 +131,8 @@ uploaded_file = st.file_uploader("Choose a DICOM file (optional)", type=["dcm"])
 prescript_dose = st.number_input('Prescription Dose', min_value=0.0, value=40.0, format="%.2f")
 min_dose = st.number_input('Minimum Dose', min_value=0.1, value=1.0, step=0.1, format="%.2f")
 step_type = st.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
+unit = ' (mm)'
+if step_type == 'Relative (%)': unit = ' (%)'
 step = 0.1; fmt = '%.2f'
 # if step_type == 'Absolute (Gy)': step = 0.01; fmt = '%.2f'
 step_size = round(st.number_input('Step Size', min_value=step, max_value=9.0, value=1.0, step=step, format=fmt,label_visibility="collapsed"),3)
@@ -184,7 +186,7 @@ if st.button('Process'):
                 fig_ddgi.add_trace(go.Scatter(x=[min_dDGI_point], y=[min_dDGI], mode='markers+text', name='Min dDGI',
                                               marker=dict(color='red'), text=["Min dDGI"], textposition="top center"))
 
-            fig_ddgi.update_layout(title=f'dDGI vs {xidx}', xaxis_title=xidx+' ()', yaxis_title='DGI (mm)')
+            fig_ddgi.update_layout(title=f'dDGI vs {xidx}', xaxis_title=xidx+unit, yaxis_title='DGI (mm)')
             
             st.plotly_chart(fig_ddgi)
 
@@ -192,7 +194,7 @@ if st.button('Process'):
             dgi_parameters = dgi_parameters.dropna()
             fig_cdgi = go.Figure()
             fig_cdgi.add_trace(go.Scatter(x=dgi_parameters[xidx], y=dgi_parameters["cDGI"], mode='markers', name='cDGI'))
-            fig_cdgi.update_layout(title=f'cDGI vs {xidx}', xaxis_title=xidx+' ()', yaxis_title='DGI (mm)')
+            fig_cdgi.update_layout(title=f'cDGI vs {xidx}', xaxis_title=xidx+unit, yaxis_title='DGI (mm)')
 
             xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["cDGI"].values, frac=.2)
             fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression'))
