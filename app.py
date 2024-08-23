@@ -191,8 +191,7 @@ if st.button('Process'):
             # Plot cDGI
             dgi_parameters = dgi_parameters.dropna()
             fig_cdgi = go.Figure()
-            fig_cdgi.add_trace(go.Scatter(x=dgi_parameters[xidx], y=dgi_parameters["cDGI"],
-                                          mode='markers', name='cDGI'))
+            fig_cdgi.add_trace(go.Scatter(x=dgi_parameters[xidx], y=dgi_parameters["cDGI"], mode='markers', name='cDGI'))
             fig_cdgi.update_layout(title=f'cDGI vs {xidx}', xaxis_title=xidx+' ()', yaxis_title='DGI (mm)')
 
             xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["cDGI"].values, frac=.2)
