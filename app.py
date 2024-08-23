@@ -133,7 +133,7 @@ min_dose = st.number_input('Minimum Dose', min_value=0.1, value=1.0, step=0.1, f
 step_type = st.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
 step = 0.1; fmt = '%.2f'
 # if step_type == 'Absolute (Gy)': step = 0.01; fmt = '%.2f'
-step_size = round(st.number_input('Step Size', min_value=step, max_value=2.0, value=1.0, step=step, format=fmt,label_visibility="collapsed"),3)
+step_size = round(st.number_input('Step Size', min_value=step, max_value=9.0, value=1.0, step=step, format=fmt,label_visibility="collapsed"),3)
 
 if step_type == 'Relative (%)': step_size = round(prescript_dose*step_size*0.01,3)
 
