@@ -9,20 +9,6 @@ import base64
 from loess.loess_1d import loess_1d
 from multiprocessing import Pool
 
-st.markdown("""
-    <style>
-    .reportview-container {
-        margin-top: -2em;
-    }
-    #MainMenu {visibility: hidden;}
-    .stDeployButton {display:none;}
-    footer {visibility: hidden;}
-    #stDecoration {display:none;}
-    </style>
-""", unsafe_allow_html=True)
-
-st.session_state.theme = "light"
-
 def read_dose_dicom(dicom_file_path):
     ds = pydicom.dcmread(dicom_file_path)
     dose_grid_scaling = ds.DoseGridScaling
