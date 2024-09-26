@@ -9,6 +9,8 @@ import base64
 from loess.loess_1d import loess_1d
 from multiprocessing import Pool
 
+st.set_page_config(layout="wide")
+
 def read_dose_dicom(dicom_file_path):
     ds = pydicom.dcmread(dicom_file_path)
     dose_grid_scaling = ds.DoseGridScaling
@@ -113,15 +115,16 @@ def get_table_download_link(df):
 st.title('Dose Gradient Curve')
 
 # Inputs
-uploaded_file = st.file_uploader("Choose a DICOM file (optional)", type=["dcm"])
-prescript_dose = st.number_input('Prescription Dose', min_value=0.0, value=40.0, format="%.2f")
-min_dose = st.number_input('Minimum Dose', min_value=0.1, value=1.0, step=0.1, format="%.2f")
-step_type = st.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
+st.sidebar.header("Upload DICOM Files")
+uploaded_file = st.sidebar.file_uploader("Choose a DICOM file (optional)", type=["dcm"])
+prescript_dose = st.sidebar.number_input('Prescription Dose', min_value=0.0, value=40.0, format="%.2f")
+min_dose = st.sidebar.number_input('Minimum Dose', min_value=0.1, value=1.0, step=0.1, format="%.2f")
+step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
 unit = ' (mm)'
 if step_type == 'Relative (%)': unit = ' (%)'
 step = 0.1; fmt = '%.2f'
 # if step_type == 'Absolute (Gy)': step = 0.01; fmt = '%.2f'
-step_size = round(st.number_input('Step Size', min_value=step, max_value=9.0, value=1.0, step=step, format=fmt,label_visibility="collapsed"),3)
+step_size = round(st.sidebar.number_input('Step Size', min_value=step, max_value=9.0, value=1.0, step=step, format=fmt,label_visibility="collapsed"),3)
 
 if step_type == 'Relative (%)': step_size = round(prescript_dose*step_size*0.01,3)
 
@@ -132,7 +135,7 @@ if uploaded_file is not None:
     with open(dicom_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-if st.button('Process'):
+if st.sidebar.button('Process'):
     try:
         dose_data, ipp, pixel_spacing, grid_frame_offset_vector = read_dose_dicom(dicom_path)
         min_dose_value = np.min(dose_data)
