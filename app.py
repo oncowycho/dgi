@@ -121,7 +121,7 @@ prescript_dose = st.sidebar.number_input('Prescription Dose', min_value=0.0, val
 min_dose = st.sidebar.number_input('Minimum Dose', min_value=0.1, value=1.0, step=0.1, format="%.2f")
 step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
 unit = ' (Gy)'
-if step_type == 'Relative (%)': unit = ' (%)'
+if step_type == 'Relative (%)': unit = ''
 step = 0.1; fmt = '%.2f'
 # if step_type == 'Absolute (Gy)': step = 0.01; fmt = '%.2f'
 step_size = round(st.sidebar.number_input('Step Size', min_value=step, max_value=9.0, value=1.0, step=step, format=fmt,label_visibility="collapsed"),3)
@@ -151,7 +151,7 @@ if st.sidebar.button('Process'):
             st.sidebar.markdown(get_table_download_link(dgi_parameters), unsafe_allow_html=True)
 
             if step_type == 'Absolute (Gy)':
-                xidx = 'Dose (Gy)'
+                xidx = 'Dose'
                 prescript = prescript_dose
             elif step_type == 'Relative (%)':
                 xidx = 'Dose (%)'
