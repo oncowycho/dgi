@@ -151,7 +151,7 @@ if st.sidebar.button('Process'):
             st.sidebar.markdown(get_table_download_link(dgi_parameters), unsafe_allow_html=True)
 
             if step_type == 'Absolute (Gy)':
-                xidx = 'Dose'
+                xidx = 'Dose (Gy)'
                 prescript = prescript_dose
             elif step_type == 'Relative (%)':
                 xidx = 'Dose (%)'
