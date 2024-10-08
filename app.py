@@ -120,7 +120,7 @@ uploaded_file = st.sidebar.file_uploader("Choose a DICOM file (optional)", type=
 prescript_dose = st.sidebar.number_input('Prescription Dose', min_value=0.0, value=40.0, format="%.2f")
 min_dose = st.sidebar.number_input('Minimum Dose', min_value=0.1, value=1.0, step=0.1, format="%.2f")
 step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
-unit = ' (mm)'
+unit = ' (Gy)'
 if step_type == 'Relative (%)': unit = ' (%)'
 step = 0.1; fmt = '%.2f'
 # if step_type == 'Absolute (Gy)': step = 0.01; fmt = '%.2f'
