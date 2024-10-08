@@ -116,7 +116,7 @@ st.title('Dose Gradient Curve')
 
 # Inputs
 st.sidebar.header("Upload DICOM Files")
-uploaded_file = st.sidebar.file_uploader("Upload a RT dose file (dose.dcm)", type=["dcm"])
+uploaded_file = st.sidebar.file_uploader("Upload RT dose file (dose.dcm)", type=["dcm"])
 prescript_dose = st.sidebar.number_input('Prescription Dose', min_value=0.0, value=40.0, format="%.2f")
 min_dose = st.sidebar.number_input('Minimum Dose', min_value=0.1, value=1.0, step=0.1, format="%.2f")
 step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
