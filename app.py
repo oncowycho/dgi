@@ -15,7 +15,7 @@ st.set_page_config(layout="wide")
 
 def read_dose_dicom(dicom_file_path):
     ds = pydicom.dcmread(dicom_file_path, force=True)
-    if not hasattr(dicom_file.file_meta, 'TransferSyntaxUID'):
+    if not hasattr(ds.file_meta, 'TransferSyntaxUID'):
         ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
     dose_grid_scaling = ds.DoseGridScaling
     dose_data = ds.pixel_array * dose_grid_scaling
