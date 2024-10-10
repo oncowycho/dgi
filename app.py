@@ -146,7 +146,7 @@ if st.sidebar.button('Process'):
         else:
             dose_coordinates = extract_dose_coordinates(dose_data, ipp, pixel_spacing, grid_frame_offset_vector, prescript_dose, min_dose, step_size, step_type)
             dgi_parameters = calculate_dgi(dose_coordinates, min_dose, prescript_dose, step_size, step_type)
-            print(dgi_parameters)
+
             # Save CSV file
             st.sidebar.markdown(get_table_download_link(dgi_parameters), unsafe_allow_html=True)
 
