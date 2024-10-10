@@ -8,11 +8,15 @@ import plotly.graph_objects as go
 import base64
 from loess.loess_1d import loess_1d
 from multiprocessing import Pool
+from pydicom.uid import ImplicitVRLittleEndian
+
 
 st.set_page_config(layout="wide")
 
 def read_dose_dicom(dicom_file_path):
     ds = pydicom.dcmread(dicom_file_path, force=True)
+    if not hasattr(dicom_file.file_meta, 'TransferSyntaxUID'):
+        ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
     dose_grid_scaling = ds.DoseGridScaling
     dose_data = ds.pixel_array * dose_grid_scaling
     ipp = np.array(ds.ImagePositionPatient).astype(float)
