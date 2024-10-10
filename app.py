@@ -12,7 +12,7 @@ from multiprocessing import Pool
 st.set_page_config(layout="wide")
 
 def read_dose_dicom(dicom_file_path):
-    ds = pydicom.dcmread(dicom_file_path)
+    ds = pydicom.dcmread(dicom_file_path, force=True)
     dose_grid_scaling = ds.DoseGridScaling
     dose_data = ds.pixel_array * dose_grid_scaling
     ipp = np.array(ds.ImagePositionPatient).astype(float)
