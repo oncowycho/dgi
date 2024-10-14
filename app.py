@@ -121,6 +121,8 @@ st.title('Dose Gradient Curve')
 # Inputs
 st.sidebar.header("Upload DICOM Files")
 uploaded_file = st.sidebar.file_uploader("Upload RT Dose (dose.dcm)", type=["dcm"])
+structure_file = st.sidebar.file_uploader("Upload RT Structure (rts.dcm) (Optional)", type=["dcm"])
+
 prescript_dose = st.sidebar.number_input('Prescription Dose (Gy)', min_value=0.0, value=40.0, format="%.2f")
 min_dose = st.sidebar.number_input('Minimum Dose (Gy)', min_value=0.1, value=1.0, step=0.1, format="%.2f")
 step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
@@ -139,6 +141,20 @@ if uploaded_file is not None:
     with open(dicom_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
+if structure_file:
+    rtss_file = pydicom.dcmread(structure_file, force=True)
+    rtss_parser = dicomparser.DicomParser(rtss_file)
+
+    RTstructures = rtss_parser.GetStructures()
+
+    # Create a dictionary mapping structure names to structure IDs
+    structure_name_to_id = {structure['name']: key for key, structure in RTstructures.items()}
+
+    # Using multiselect for selecting multiple structures by name
+    selected_structure_names = st.sidebar.multiselect(
+        "Select Structures for DVH Calculation", list(structure_name_to_id.keys())
+    )
+    
 if st.sidebar.button('Process'):
     try:
         dose_data, ipp, pixel_spacing, grid_frame_offset_vector = read_dose_dicom(dicom_path)
