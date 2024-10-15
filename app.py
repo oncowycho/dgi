@@ -16,6 +16,8 @@ import matplotlib.path
 st.set_page_config(layout="wide")
 st.logo('logo.png')
 
+st.session_state.themes = 'light'
+
 hide = """
     <style>
         #MainMenu {visibility: hidden;}
