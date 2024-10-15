@@ -15,7 +15,7 @@ import matplotlib.path
 
 st.set_page_config(layout="wide")
 st.logo('logo_light.png')
-st.logo('logo_dark.png')
+#st.logo('logo_dark.png')
 
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
     """Calculate a cumulative DVH in Gy from a DICOM RT Structure Set & Dose."""
