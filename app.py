@@ -15,6 +15,7 @@ import matplotlib.path
 
 st.set_page_config(layout="wide")
 theme = st.get_option("theme.base")
+st.write(st.get_option("theme.textColor"))
 
 if theme == "dark":
     st.logo('logo_light.png')
