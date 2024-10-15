@@ -18,7 +18,6 @@ st.set_page_config(layout="wide")
 hide = """
     <style>
         #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
     </style>
 """
 st.markdown(hide, unsafe_allow_html=True)
