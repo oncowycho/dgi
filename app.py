@@ -19,9 +19,13 @@ st.logo('logo.png')
 hide = """
     <style>
         #MainMenu {visibility: hidden;}
+        .stApp {
+        background-color: white;
+        }
     </style>
 """
 st.markdown(hide, unsafe_allow_html=True)
+
 
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
     """Calculate a cumulative DVH in Gy from a DICOM RT Structure Set & Dose."""
