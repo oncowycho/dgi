@@ -427,12 +427,12 @@ def main():
                 )
                 
                 xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["cDGI"].values, frac=.2)
-                fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression', marker=dict(color='lightskyblue')))
+                fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression', marker=dict(color='lightskyblue'),yaxis='y2'))
                 
                 min_dDGI_on_cDGI = nearby_points['cDGI'].loc[min_dDGI_idx]
                 fig_cdgi.add_trace(go.Scatter(x=[min_dDGI_point], y=[min_dDGI_on_cDGI],
                                               mode='markers+text', name='Min dDGI',
-                                              marker=dict(color='red'), text=["Min dDGI"], textposition="top center", textfont=dict(size=14, color="gray"))
+                                              marker=dict(color='red'), text=["Min dDGI"], textposition="top center", textfont=dict(size=14, color="gray"),yaxis='y2')
                                    )
                 
                 st.plotly_chart(fig_cdgi)
