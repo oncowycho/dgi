@@ -13,7 +13,7 @@ from pydicom.uid import ImplicitVRLittleEndian
 from dicompylercore import dicomparser, dvh
 import matplotlib.path
 
-st.set_page_config(layout="wide", theme="light")
+st.set_page_config(layout="wide")
 st.logo('logo.png')
 
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
