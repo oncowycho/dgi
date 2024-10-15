@@ -281,20 +281,26 @@ def main():
         if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
             rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         rtdose = dicomparser.DicomParser(rtdose_file)
-        
+          
     # structure_file = 'rts.dcm'
     if structure_file:
         rtss_file = pydicom.dcmread(structure_file, force=True)
-        rtss = dicomparser.DicomParser(rtss_file)
-        RTstructures = rtss.GetStructures()
-        
-        # Create a dictionary mapping structure names to structure IDs
-        structure_name_to_id = {structure['name']: key for key, structure in RTstructures.items()}
 
-        # Using multiselect for selecting multiple structures by name
-        selected_structure_names = st.sidebar.multiselect(
-            "Select Structures for DVH Calculation", list(structure_name_to_id.keys())
-        )
+        # Check SOP Instance UID or Study Instance UID to ensure the files belong to the same study
+        if hasattr(rtss_file, 'StudyInstanceUID') and hasattr(rtdose_file, 'StudyInstanceUID'):
+            if rtss_file.StudyInstanceUID != rtdose_file.StudyInstanceUID:
+                structure_file = None
+            else:
+                rtss = dicomparser.DicomParser(rtss_file)
+                RTstructures = rtss.GetStructures()
+        
+                # Create a dictionary mapping structure names to structure IDs
+                structure_name_to_id = {structure['name']: key for key, structure in RTstructures.items()}
+
+                # Using multiselect for selecting multiple structures by name
+                selected_structure_names = st.sidebar.multiselect(
+                    "Select Structures for DVH Calculation", list(structure_name_to_id.keys())
+                )
         
     if st.sidebar.button('Process'):
         fig_cdgi = go.Figure()
