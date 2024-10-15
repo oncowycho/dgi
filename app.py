@@ -16,8 +16,6 @@ import matplotlib.path
 st.set_page_config(layout="wide")
 st.logo('logo.png')
 
-st.session_state.themes = 'light'
-
 hide = """
     <style>
 .stChatInputContainer > div {"primaryColor":"#ff4b4b","backgroundColor":"#ffffff","secondaryBackgroundColor":"#f0f2f6","textColor":"#31333F","base":"light","font":"\"Source Sans Pro\", sans-serif","linkText":"#0068c9","fadedText05":"rgba(49, 51, 63, 0.1)","fadedText10":"rgba(49, 51, 63, 0.2)","fadedText20":"rgba(49, 51, 63, 0.3)","fadedText40":"rgba(49, 51, 63, 0.4)","fadedText60":"rgba(49, 51, 63, 0.6)","bgMix":"rgba(248, 249, 251, 1)","darkenedBgMix100":"hsla(220, 27%, 68%, 1)","darkenedBgMix25":"rgba(151, 166, 195, 0.25)","darkenedBgMix15":"rgba(151, 166, 195, 0.15)","lightenedBg05":"hsla(0, 0%, 100%, 1)","borderColor":"rgba(49, 51, 63, 0.2)","borderColorLight":"rgba(49, 51, 63, 0.1)"}
