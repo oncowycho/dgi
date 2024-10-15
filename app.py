@@ -21,6 +21,8 @@ if theme == "dark":
 else:
     st.logo('logo_dark.png')
 
+st.logo('logo.png')
+
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
     """Calculate a cumulative DVH in Gy from a DICOM RT Structure Set & Dose."""
     structures = rtss.GetStructures()
