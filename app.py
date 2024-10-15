@@ -13,6 +13,9 @@ from pydicom.uid import ImplicitVRLittleEndian
 from dicompylercore import dicomparser, dvh
 import matplotlib.path
 
+#GithubIcon {
+  visibility: hidden;
+}
 
 st.set_page_config(layout="wide")
 
