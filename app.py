@@ -72,8 +72,7 @@ def calculate_dvh(structure, dose, limit=None, callback=None):
     return hist
 
 
-def calculate_plane_histogram(plane, doseplane, dosegridpoints,
-                              maxdose, dd, id, structure, hist):
+def calculate_plane_histogram(plane, doseplane, dosegridpoints, maxdose, dd, id, structure, hist):
     contours = [[x[0:2] for x in c['data']] for c in plane]
 
     if not len(doseplane):
@@ -123,6 +122,7 @@ def read_dose_dicom(dicom_file_path):
     grid_frame_offset_vector = np.array(ds.GridFrameOffsetVector).astype(float) if 'GridFrameOffsetVector' in ds else [0]
     return dose_data, ipp, pixel_spacing, grid_frame_offset_vector
 
+
 def process_slice(args):
     z, dose_slice, ipp, pixel_spacing, grid_frame_offset_vector, dose_values = args
     coordinates = []
@@ -138,6 +138,7 @@ def process_slice(args):
                 coordinates.append([x_coord, y_coord, z_coord, dose])
     return coordinates
 
+
 def extract_dose_coordinates_parallel(dose_data, ipp, pixel_spacing, grid_frame_offset_vector, prescript_dose, min_dose, step_size, step_type):
     vmin = max(round(np.min(dose_data), -1), min_dose)
     vmax = np.max(dose_data)
@@ -148,6 +149,7 @@ def extract_dose_coordinates_parallel(dose_data, ipp, pixel_spacing, grid_frame_
         results = pool.map(process_slice, [(z, dose_data[z], ipp, pixel_spacing, grid_frame_offset_vector, dose_values) for z in range(dose_data.shape[0])])
     coordinates = [item for sublist in results for item in sublist]
     return coordinates
+
 
 def extract_dose_coordinates(dose_data, ipp, pixel_spacing, grid_frame_offset_vector, prescript_dose, min_dose, step_size, step_type):
     mask = dose_data >= min_dose
@@ -172,7 +174,8 @@ def extract_dose_coordinates(dose_data, ipp, pixel_spacing, grid_frame_offset_ve
                     y_coord = ipp[1] + y_index * pixel_spacing[0]
                     coordinates.append([x_coord, y_coord, z_coord, dose])
     return coordinates
-    
+
+
 def calculate_dgi(dose_coordinates, min_dose, prescript_dose, step_size, step_type):
     df = pd.DataFrame(dose_coordinates, columns=["x", "y", "z", "dose"]).sort_values(by='dose')
     df = df[df.dose >= min_dose]
@@ -207,6 +210,7 @@ def calculate_dgi(dose_coordinates, min_dose, prescript_dose, step_size, step_ty
         if dose != grouped[-1]: area0, volume0 = area, volume
             
     return pd.DataFrame(dgi_para, columns=["Dose", "Dose (%)","Area", "Volume", "dDGI", "cDGI"])
+
 
 def get_table_download_link(df):
     csv = df.to_csv(index=False)
@@ -248,7 +252,7 @@ def main():
     structure_file = st.sidebar.file_uploader("Upload RT Structure (rts.dcm) (Optional)", type=["dcm"])
     
     prescript_dose = st.sidebar.number_input('Prescription Dose (Gy)', min_value=0.0, value=40.0, format="%.2f")
-    min_dose = st.sidebar.number_input('Minimum Dose (Gy)', min_value=0.1, value=1.0, step=0.1, format="%.2f")
+    min_dose = st.sidebar.number_input('Minimum Dose (Gy)', min_value=0.1, value=0.1, step=0.1, format="%.2f")
     step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
     unit = ' (Gy)'
     step = 0.1; fmt = '%.2f'
@@ -264,15 +268,19 @@ def main():
         xidx = 'Dose'
         prescript = prescript_dose
         dunit = 100
+        dtick = 2
     elif step_type == 'Relative (%)':
         xidx = 'Dose (%)'
         prescript = 100
         dunit = prescript_dose
+        dtick = 5
 
     # Use the default file if no file is uploaded
     dicom_file = 'dose.dcm'
     if uploaded_file is not None:
         dicom_file = uploaded_file.name
+        # with open(dicom_file, "wb") as f:
+        #     f.write(uploaded_file.getbuffer())
             
     if dicom_file:
         rtdose_file = pydicom.dcmread(dicom_file, force=True)
@@ -354,6 +362,13 @@ def main():
                         range=[0, max_dDGI*1.05],
                         showgrid=True
                     ),
+                    xaxis=dict(
+                        tickmode='linear',
+                        tick0=0,
+                        dtick=dtick,
+                        showgrid=True
+                    ),
+
                     font=dict(size=18, color="black"),
                     # height=400,
                     legend=dict(x=1.06, y=1,
@@ -397,7 +412,7 @@ def main():
                     xaxis=dict(
                         tickmode='linear',
                         tick0=0,
-                        dtick=2,
+                        dtick=dtick,
                         showgrid=True
                     ),
                     font=dict(size=18, color="black"),
