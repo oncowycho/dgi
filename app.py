@@ -14,6 +14,7 @@ from dicompylercore import dicomparser, dvh
 import matplotlib.path
 
 st.set_page_config(layout="wide")
+st.logo('logo.png')
 
 hide = """
     <style>
