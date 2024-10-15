@@ -273,8 +273,6 @@ def main():
     dicom_file = 'dose.dcm'
     if uploaded_file is not None:
         dicom_file = uploaded_file.name
-        with open(dicom_file, "wb") as f:
-            f.write(uploaded_file.getbuffer())
             
     if dicom_file:
         rtdose_file = pydicom.dcmread(dicom_file, force=True)
@@ -300,6 +298,8 @@ def main():
                 selected_structure_names = st.sidebar.multiselect(
                     "Select Structures for DVH Calculation", list(structure_name_to_id.keys())
                 )
+        else:
+            structure_file = None
         
     if st.sidebar.button('Process'):
         fig_cdgi = go.Figure()
