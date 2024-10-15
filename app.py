@@ -20,7 +20,7 @@ hide = """
     <style>
         #MainMenu {visibility: hidden;}
         .stApp {
-        background-color: white;
+        base: white;
         }
     </style>
 """
