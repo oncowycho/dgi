@@ -13,7 +13,7 @@ from pydicom.uid import ImplicitVRLittleEndian
 from dicompylercore import dicomparser, dvh
 import matplotlib.path
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide",page_title = "Dose Gradient", page_icon="logo_tab.ico",)
 theme = st.get_option("theme.base")
 
 if theme == "dark":
