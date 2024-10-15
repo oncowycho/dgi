@@ -284,8 +284,8 @@ def main():
             
     if dicom_file:
         rtdose_file = pydicom.dcmread(dicom_file, force=True)
-        if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
-            rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+        #if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
+        #    rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         rtdose = dicomparser.DicomParser(rtdose_file)
           
     if structure_file:
