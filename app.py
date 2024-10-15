@@ -282,7 +282,6 @@ def main():
             rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         rtdose = dicomparser.DicomParser(rtdose_file)
           
-    # structure_file = 'rts.dcm'
     if structure_file:
         rtss_file = pydicom.dcmread(structure_file, force=True)
 
