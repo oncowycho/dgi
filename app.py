@@ -369,7 +369,7 @@ def main():
                         showgrid=True
                     ),
 
-                    font=dict(size=18, color="black"),
+                    font=dict(family="Arial, bold", size=18, color="black"),
                     # height=400,
                     legend=dict(x=1.06, y=1,
                                 xanchor='left', yanchor='top',
@@ -415,7 +415,7 @@ def main():
                         dtick=dtick,
                         showgrid=True
                     ),
-                    font=dict(size=18, color="black"),
+                    font=dict(family="Arial, bold", size=18, color="black"),
                     # height=600,
                     legend=dict(
                         x=1.06,
