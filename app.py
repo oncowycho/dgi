@@ -392,7 +392,7 @@ def main():
                     title=f'cDGI vs {xidx}',
                     xaxis_title=xidx+unit,
                     yaxis=dict(
-                        title='Ratio of Total Structure Volume (%)',
+                        title='Relative Volume (%)',
                         tickmode='linear',
                         side='right',
                         dtick=25,
