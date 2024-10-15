@@ -14,7 +14,8 @@ from dicompylercore import dicomparser, dvh
 import matplotlib.path
 
 st.set_page_config(layout="wide")
-theme = st.get_option("theme.primaryColor")
+theme = st.radio("Select a theme", ("Light", "Dark"))
+
 st.write(theme)
 if theme == "dark":
     st.logo('logo_light.png')
