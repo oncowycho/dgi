@@ -14,8 +14,12 @@ from dicompylercore import dicomparser, dvh
 import matplotlib.path
 
 st.set_page_config(layout="wide")
-st.logo('logo_light.png')
-#st.logo('logo_dark.png')
+theme = st.get_option("theme.base")
+
+if theme == "dark":
+    st.logo('logo_light.png')
+else:
+    st.logo('logo_dark.png')
 
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
     """Calculate a cumulative DVH in Gy from a DICOM RT Structure Set & Dose."""
