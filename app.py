@@ -21,12 +21,9 @@ st.session_state.themes = 'light'
 hide = """
     <style>
         #MainMenu {visibility: hidden;}
-        .stApp {
-        "theme.base": "light";
-        }
     </style>
 """
-st.markdown(hide, unsafe_allow_html=True)
+#st.markdown(hide, unsafe_allow_html=True)
 
 
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
