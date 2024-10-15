@@ -113,8 +113,8 @@ def calculate_contour_dvh(mask, doseplane, maxdose, dd, id, structure):
 
 def read_dose_dicom(dicom_file_path):
     ds = pydicom.dcmread(dicom_file_path, force=True)
-    #if not hasattr(ds.file_meta, 'TransferSyntaxUID'):
-    #    ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+    if not hasattr(ds.file_meta, 'TransferSyntaxUID'):
+        ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
     dose_grid_scaling = ds.DoseGridScaling
     dose_data = ds.pixel_array * dose_grid_scaling
     ipp = np.array(ds.ImagePositionPatient).astype(float)
@@ -279,13 +279,13 @@ def main():
     dicom_file = 'dose.dcm'
     if uploaded_file is not None:
         dicom_file = uploaded_file.name
-        # with open(dicom_file, "wb") as f:
-        #     f.write(uploaded_file.getbuffer())
+        with open(dicom_file, "wb") as f:
+            f.write(uploaded_file.getbuffer())
             
     if dicom_file:
         rtdose_file = pydicom.dcmread(dicom_file, force=True)
-        #if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
-        #    rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+        if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
+            rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         rtdose = dicomparser.DicomParser(rtdose_file)
           
     if structure_file:
