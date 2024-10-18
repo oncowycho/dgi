@@ -404,7 +404,7 @@ def main():
                         side='right',
                         dtick=25,
                         range=[0, 100*1.05],
-                        showgrid=True
+                        showgrid=False
                     ),
                     yaxis2=dict(
                         title='DGI (mm)',
@@ -414,7 +414,7 @@ def main():
                         tickmode='linear',
                         dtick=max_cdgi/4,
                         range=[0, max_cdgi*1.05],
-                        showgrid=False
+                        showgrid=True
                     ),
                     xaxis=dict(
                         tickmode='linear',
