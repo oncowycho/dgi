@@ -256,7 +256,7 @@ def main():
     # Inputs
     st.sidebar.header("Upload DICOM Files")
     uploaded_file = st.sidebar.file_uploader("Upload RT Dose (dose.dcm)", type=["dcm"])
-    structure_file = st.sidebar.file_uploader("Upload RT Structure (rts.dcm) (Optional)", type=["dcm"])
+    uploaded_structure_file = st.sidebar.file_uploader("Upload RT Structure (rts.dcm) (Optional)", type=["dcm"])
     
     prescript_dose = st.sidebar.number_input('Prescription Dose (Gy)', min_value=0.0, value=40.0, format="%.2f")
     min_dose = st.sidebar.number_input('Minimum Dose (Gy)', min_value=0.1, value=0.1, step=0.1, format="%.2f")
@@ -294,6 +294,10 @@ def main():
         if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
             rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         rtdose = dicomparser.DicomParser(rtdose_file)
+
+    structure_file = 'rts.dcm'
+    if uploaded_structure_file::
+        structure_file = uploaded_file.name
           
     if structure_file:
         rtss_file = pydicom.dcmread(structure_file, force=True)
