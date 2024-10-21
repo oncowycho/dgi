@@ -284,7 +284,7 @@ def main():
 
     # Use the default file if no file is uploaded
     dicom_file = 'dose.dcm'
-    if uploaded_file is not None:
+    if uploaded_file:
         dicom_file = uploaded_file.name
         with open(dicom_file, "wb") as f:
             f.write(uploaded_file.getbuffer())
@@ -296,7 +296,7 @@ def main():
         rtdose = dicomparser.DicomParser(rtdose_file)
 
     structure_file = 'rts.dcm'
-    if uploaded_structure_file::
+    if uploaded_structure_file:
         structure_file = uploaded_file.name
           
     if structure_file:
