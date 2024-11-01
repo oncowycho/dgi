@@ -300,8 +300,7 @@ def main():
         structure_file = uploaded_structure_file.name
         with open(structure_file, "wb") as f:
             f.write(uploaded_structure_file.getbuffer())
-    st.write(uploaded_structure_file)
-    st.write(structure_file)
+
     if structure_file:
         rtss_file = pydicom.dcmread(structure_file, force=True)
 
