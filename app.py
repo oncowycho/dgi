@@ -297,9 +297,9 @@ def main():
 
     structure_file = 'rts.dcm'
     if uploaded_structure_file:
-        structure_file = uploaded_file.name
-        with open(dicom_file, "wb") as f:
-            f.write(uploaded_structure_file.getbuffer())
+        structure_file = uploaded_structure_file.name
+        #with open(dicom_file, "wb") as f:
+        #    f.write(uploaded_structure_file.getbuffer())
 
     if structure_file:
         rtss_file = pydicom.dcmread(structure_file, force=True)
