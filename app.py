@@ -21,8 +21,6 @@ if theme == "dark":
 else:
     st.logo('logo_dark.png')
 
-#st.logo('logo.png')
-
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
     """Calculate a cumulative DVH in Gy from a DICOM RT Structure Set & Dose."""
     structures = rtss.GetStructures()
@@ -225,6 +223,33 @@ def get_table_download_link(df):
     href = f'<a href="data:file/csv;base64,{b64}" download="dgi_parameters.csv">Download dgi_parameters.csv</a>'
     return href
 
+def make_vivid(color):
+    r, g, b = color
+    # Set minimum or maximum RGB values to make the color vivid
+    r = max(min(r, 255), 200) if r > 128 else min(max(r, 0), 50)
+    g = max(min(g, 255), 200) if g > 128 else min(max(g, 0), 50)
+    b = max(min(b, 255), 200) if b > 128 else min(max(b, 0), 50)
+    return r, g, b
+
+def make_vivid_and_contrasting(color):
+    r, g, b = color
+    # Calculate brightness as the average of RGB values
+    brightness = (r + g + b) / 3
+
+    # Exclude colors that are too bright (e.g., average brightness above 200)
+    if brightness > 200:
+        # If color is too bright, adjust to a vivid darker color
+        r = min(r, 180)
+        g = min(g, 180)
+        b = min(b, 180)
+    
+    # Ensure each component is either close to 0 or high for saturation
+    r = max(min(r, 255), 200) if r > 128 else min(max(r, 0), 50)
+    g = max(min(g, 255), 200) if g > 128 else min(max(g, 0), 50)
+    b = max(min(b, 255), 200) if b > 128 else min(max(b, 0), 50)
+    
+    return r, g, b
+
 
 def cal_dvh(fig, rtss, rtdose, RTstructures, structure_name_to_id, selected_structure_names, unit):
     calcdvhs = {}
@@ -233,6 +258,10 @@ def cal_dvh(fig, rtss, rtdose, RTstructures, structure_name_to_id, selected_stru
     for structure_name in selected_structure_names:
         structure_id = structure_name_to_id[structure_name]
         structure = RTstructures[structure_id]
+        vivid_color = make_vivid(structure["color"])
+        vivid_contrast_color = make_vivid_and_contrasting(structure["color"])
+        color_string = f'rgb({vivid_contrast_color[0]}, {vivid_contrast_color[1]}, {vivid_contrast_color[2]})'
+        
         calcdvhs[structure_id] = get_dvh(rtss, rtdose, structure_id)
 
         if calcdvhs[structure_id].counts.any():
@@ -242,7 +271,7 @@ def cal_dvh(fig, rtss, rtdose, RTstructures, structure_name_to_id, selected_stru
                 y=calcdvhs[structure_id].counts * 100 / calcdvhs[structure_id].counts[0],
                 mode='lines',
                 name=structure['name'],
-                line=dict(color=f'rgb({structure["color"][0]}, {structure["color"][1]}, {structure["color"][2]})', dash='dash'),
+                line=dict(color=color_string, dash='dash', width=3),
                 yaxis='y'
             ))
 
@@ -251,8 +280,9 @@ def cal_dvh(fig, rtss, rtdose, RTstructures, structure_name_to_id, selected_stru
 
 def main():
     # ------------------------ [ UI ] -----------------------------
-    st.title('Dose Gradient Curve')
-
+    # st.title('Dose Gradient Curve')
+    st.markdown("<h1 style='text-align: center; margin-top: -60px;'>Dose Gradient Curve</h1>", unsafe_allow_html=True)
+    
     # Inputs
     st.sidebar.header("Upload DICOM Files")
     uploaded_file = st.sidebar.file_uploader("Upload RT Dose (dose.dcm)", type=["dcm"])
@@ -341,11 +371,10 @@ def main():
                 # Save CSV file
                 st.sidebar.markdown(get_table_download_link(dgi_parameters), unsafe_allow_html=True)
 
-                # Plot dDGI
                 fig_ddgi = go.Figure()
                 fig_ddgi.add_trace(go.Scatter(x=dgi_parameters[xidx], y=dgi_parameters["dDGI"],
                                               mode='markers', marker=dict(color='royalblue'), name='dDGI')
-                                   )
+                                   )                
 
                 xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["dDGI"].values, frac=.2)
                 fig_ddgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', marker=dict(color='lightskyblue'), name='Regression'))
@@ -364,31 +393,38 @@ def main():
 
                 max_dDGI = round(dgi_parameters["dDGI"].max()+4,-1)
                 
+                # Update layout for fig_ddgi
                 fig_ddgi.update_layout(
-                    title=f'dDGI vs {xidx}',
-                    xaxis_title=xidx+unit,
+                    title={
+                        'text': f'dDGI <i>vs</i> {xidx}',
+                        'font': dict(size=22, family="Arial Black", color="black"),  # Set larger title font
+                        # 'x': 0.5  # Center align the title (optional)
+                    },
+                    xaxis_title=xidx + unit,
                     yaxis=dict(
                         title='DGI (mm)',
                         tickmode='linear',
                         side='left',
-                        dtick=max_dDGI/4,
-                        range=[0, max_dDGI*1.05],
-                        showgrid=True
+                        dtick=max_dDGI / 4,
+                        range=[0, max_dDGI * 1.05],
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label with bold font family
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels with bold font family
                     ),
                     xaxis=dict(
                         tickmode='linear',
                         tick0=0,
                         dtick=dtick,
-                        showgrid=True
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label with bold font family
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels with bold font family
                     ),
-
-                    font=dict(family="Arial, bold", size=18, color="black"),
-                    # height=400,
-                    legend=dict(x=1.06, y=1,
+                    font=dict(family="Arial Black", size=18, color="black"),
+                    legend=dict(x=1.08, y=1,
                                 xanchor='left', yanchor='top',
                                 font=dict(size=12))
                 )
-            
+
                 st.plotly_chart(fig_ddgi)
 
                 # Plot cDGI
@@ -401,46 +437,54 @@ def main():
 
                 max_cdgi = round(dgi_parameters["cDGI"].max()+4,-1)
 
+                # Update layout for fig_cdgi
                 fig_cdgi.update_layout(
-                    title=f'cDGI vs {xidx}',
-                    xaxis_title=xidx+unit,
+                    title={
+                        'text': f'cDGI <i>vs</i> {xidx}',
+                        'font': dict(size=22, family="Arial Black", color="black"),  # Set larger title font
+                        # 'x': 0.5  # Center align the title (optional)
+                    },
+                    xaxis_title=xidx + unit,
                     yaxis=dict(
                         title='Relative Volume (%)',
                         tickmode='linear',
                         side='right',
                         dtick=25,
-                        range=[0, 100*1.05],
-                        showgrid=True
+                        range=[0, 100 * 1.05],
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels
                     ),
                     yaxis2=dict(
                         title='DGI (mm)',
                         side='left',
                         overlaying='y',
-                        # matches='y',
                         tickmode='linear',
-                        dtick=max_cdgi/4,
-                        range=[0, max_cdgi*1.05],
-                        showgrid=False
+                        dtick=max_cdgi / 4,
+                        range=[0, max_cdgi * 1.05],
+                        showgrid=False,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label
+                        tickfont=dict(size=14, family="Arial Black", color="black")# Bold tick labels
                     ),
                     xaxis=dict(
                         tickmode='linear',
                         tick0=0,
                         dtick=dtick,
-                        showgrid=True
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels
                     ),
-                    font=dict(family="Arial, bold", size=18, color="black"),
-                    # height=600,
+                    font=dict(family="Arial Black", size=18, color="black"),
                     legend=dict(
-                        x=1.06,
+                        x=1.08,
                         y=1,
                         xanchor='left',
                         yanchor='top',
                         font=dict(size=12)
                     )
-                )
-                
+                )                
                 xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["cDGI"].values, frac=.2)
-                fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression', marker=dict(color='lightskyblue'),yaxis='y2'))
+                fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression', marker=dict(color='lightskyblue'), yaxis='y2'))
                 
                 min_dDGI_on_cDGI = nearby_points['cDGI'].loc[min_dDGI_idx]
                 fig_cdgi.add_trace(go.Scatter(x=[min_dDGI_point], y=[min_dDGI_on_cDGI],
