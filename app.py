@@ -21,6 +21,28 @@ if theme == "dark":
 else:
     st.logo('logo_dark.png')
 
+st.markdown(f"""
+    <style>
+    .footer {{
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #f1f1f1;
+        text-align: center;
+        padding: 10px 0;
+        font-size: 14px;
+        color: #333;
+    }}
+    </style>
+    <div class="footer">
+        © 2024 Wonyoung Cho. All rights reserved. |
+        Contact: <a href="mailto:wycho@oncosoft.io" style="text-decoration: none; color: DodgerBlue;">
+        wycho@oncosoft.io</a>
+    </div>
+""", unsafe_allow_html=True)
+
+
 def get_dvh(rtss, rtdose, roi, limit=None, callback=None):
     """Calculate a cumulative DVH in Gy from a DICOM RT Structure Set & Dose."""
     structures = rtss.GetStructures()
