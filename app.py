@@ -314,7 +314,7 @@ def main():
             text-align: center;
             margin-top: -60px;
             font-size: 48px;
-            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+            background: linear-gradient(to right, red, orange, yellow, green, blue);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Shadow effect */
