@@ -317,7 +317,11 @@ def main():
             background: linear-gradient(to right, red, orange, yellow, green, blue);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Shadow effect */
+            text-shadow: 
+                3px 3px 0px rgba(0, 0, 0, 0.2), /* Close shadow */
+                6px 6px 0px rgba(0, 0, 0, 0.15), /* Slightly farther */
+                9px 9px 0px rgba(0, 0, 0, 0.1), /* Even farther shadow */
+                12px 12px 0px rgba(0, 0, 0, 0.05); /* Final faint shadow */
         }
         </style>
         <h1 class="rainbow-text">Dose Gradient Curve</h1>
