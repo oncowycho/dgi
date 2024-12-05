@@ -23,6 +23,12 @@ else:
 
 st.markdown(f"""
     <style>
+    /* Hide the configuration menu (three dots) */
+    [data-testid="stToolbar"] {{
+        visibility: hidden;
+        height: 0px;
+    }}
+    /* Add a footer */
     .footer {{
         position: fixed;
         bottom: 0;
