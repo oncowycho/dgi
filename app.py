@@ -308,8 +308,19 @@ def cal_dvh(fig, rtss, rtdose, RTstructures, structure_name_to_id, selected_stru
 
 def main():
     # ------------------------ [ UI ] -----------------------------
-    # st.title('Dose Gradient Curve')
-    st.markdown("<h1 style='text-align: center; margin-top: -60px;'>Dose Gradient Curve</h1>", unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+        .rainbow-text {
+            text-align: center;
+            margin-top: -60px;
+            font-size: 48px;
+            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        </style>
+        <h1 class="rainbow-text">Dose Gradient Curve</h1>
+    """, unsafe_allow_html=True)
     
     # Inputs
     st.sidebar.header("Upload DICOM Files")
