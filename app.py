@@ -317,6 +317,7 @@ def main():
             background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Shadow effect */
         }
         </style>
         <h1 class="rainbow-text">Dose Gradient Curve</h1>
