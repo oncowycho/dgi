@@ -415,27 +415,54 @@ def main():
                 # Save CSV file
                 st.sidebar.markdown(get_table_download_link(dgi_parameters), unsafe_allow_html=True)
 
-                fig_ddgi = go.Figure()
-                fig_ddgi.add_trace(go.Scatter(x=dgi_parameters[xidx], y=dgi_parameters["dDGI"],
-                                              mode='markers', marker=dict(color='royalblue'), name='dDGI')
-                                   )                
+                # Create new dose points with interval of 1
+                dose_new = np.arange(np.floor(dgi_parameters['Dose'].min()), 
+                                   np.ceil(dgi_parameters['Dose'].max()) + 1, 1)
+                
+                # Interpolate all columns
+                dose_pct_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Dose (%)']))
+                area_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Area']))
+                volume_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Volume']))
+                ddgi_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['dDGI']))
+                cdgi_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['cDGI']))
 
-                xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["dDGI"].values, frac=.2)
+                # Create new DataFrame with interpolated values
+                dgi_parameters_new = pd.DataFrame({
+                    'Dose': np.flip(dose_new),  # 다시 내림차순으로
+                    'Dose (%)': np.flip(dose_pct_new),
+                    'Area': np.flip(area_new),
+                    'Volume': np.flip(volume_new),
+                    'dDGI': np.flip(ddgi_new),
+                    'cDGI': np.flip(cdgi_new)
+                })
+
+                # 이후 plotting 등에서는 dgi_parameters_new를 사용
+                x_dgi = dgi_parameters_new['Dose']
+                y_dgi = dgi_parameters_new['dDGI']
+                
+                fig_ddgi = go.Figure()
+                fig_ddgi.add_trace(go.Scatter(x=x_dgi, y=y_dgi, mode='markers', marker=dict(color='royalblue'), name='dDGI'))
+              
+                #xout, yout, wout = loess_1d(x_dgi.values, y_dgi.values, frac=.2)
+                xout, yout, wout = loess_1d(x_dgi.values, y_dgi.values, frac=.2)
+
                 fig_ddgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', marker=dict(color='lightskyblue'), name='Regression'))
                 
                 # Find the minimum dDGI near the prescription dose 10% range around the prescription dose
                 range_around_prescript = 0.1 * prescript
-                nearby_points = dgi_parameters[(dgi_parameters[xidx] >= prescript - range_around_prescript) & 
-                                               (dgi_parameters[xidx] <= prescript + range_around_prescript)]
+
+                nearby_points = dgi_parameters[(x_dgi >= prescript - range_around_prescript) & 
+                                               (x_dgi <= prescript + range_around_prescript)]
+
                 if not nearby_points.empty:
                     min_dDGI = nearby_points["dDGI"].min()
                     min_dDGI_idx = nearby_points["dDGI"].idxmin()
-                    min_dDGI_point = nearby_points[xidx].loc[min_dDGI_idx]
+                    min_dDGI_point = nearby_points[xidx].loc[min_dDGI_idx]  
                     fig_ddgi.add_trace(go.Scatter(x=[min_dDGI_point], y=[min_dDGI], mode='markers+text', name='Min dDGI',
                                                   marker=dict(color='red'),
                                                   text=["Min dDGI"], textposition="top center", textfont=dict(size=14, color='gray')))
 
-                max_dDGI = round(dgi_parameters["dDGI"].max()+4,-1)
+                max_dDGI = round(y_dgi.max()+4,-1)
                 
                 # Update layout for fig_ddgi
                 fig_ddgi.update_layout(
@@ -472,14 +499,14 @@ def main():
                 st.plotly_chart(fig_ddgi)
 
                 # Plot cDGI
-                dgi_parameters = dgi_parameters.dropna()
+                dgi_parameters_new = dgi_parameters_new.dropna()
                 # fig_cdgi = go.Figure()
-                fig_cdgi.add_trace(go.Scatter(x=dgi_parameters[xidx], y=dgi_parameters["cDGI"],
+                fig_cdgi.add_trace(go.Scatter(x=dgi_parameters_new[xidx], y=dgi_parameters_new["cDGI"],
                                               mode='markers', marker=dict(color='royalblue'),
                                               name='cDGI', yaxis='y2')
                                    )
 
-                max_cdgi = round(dgi_parameters["cDGI"].max()+4,-1)
+                max_cdgi = round(dgi_parameters_new["cDGI"].max()+4,-1)
 
                 # Update layout for fig_cdgi
                 fig_cdgi.update_layout(
@@ -527,7 +554,7 @@ def main():
                         font=dict(size=12)
                     )
                 )                
-                xout, yout, wout = loess_1d(dgi_parameters[xidx].values, dgi_parameters["cDGI"].values, frac=.2)
+                xout, yout, wout = loess_1d(dgi_parameters_new[xidx].values, dgi_parameters_new["cDGI"].values, frac=.2)
                 fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression', marker=dict(color='lightskyblue'), yaxis='y2'))
                 
                 min_dDGI_on_cDGI = nearby_points['cDGI'].loc[min_dDGI_idx]
