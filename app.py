@@ -311,17 +311,27 @@ def setup_page_style():
     """Setup initial page styling and header"""
     st.markdown("""
         <style>
-        .rainbow-text {
+        .sticky-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: white;
+            z-index: 999;
+            padding: 10px 0;
+            margin: 0;
+            width: 100%;
+        }
+        
+        .title-text {
             text-align: center;
-            margin-top: -60px;
+            margin: 0;
+            padding: 0;
             font-size: 48px;
-            background: linear-gradient(to right, red, orange, yellow, green, blue);
-            -webkit-background-clip: text;
+            color: black;
+            font-family: "Arial Black", sans-serif;
             text-shadow: 
-                3px 3px 0px rgba(0, 0, 0, 0.2),
-                6px 6px 0px rgba(0, 0, 0, 0.15),
-                9px 9px 0px rgba(0, 0, 0, 0.1),
-                12px 12px 0px rgba(0, 0, 0, 0.05);
+                2px 2px 4px rgba(0, 0, 0, 0.2),  /* Main shadow */
+                4px 4px 8px rgba(0, 0, 0, 0.1);  /* Deeper shadow */
         }
 
         .footer {
@@ -336,13 +346,49 @@ def setup_page_style():
         }
 
         .main-content {
-            margin-bottom: 50px;  /* Add space for footer */
+            margin-top: 80px;     /* Add space below fixed header */
+            margin-bottom: 50px;  /* Space for footer */
+            padding-top: 0px;
+        }
+
+        /* Remove ALL default Streamlit spacing */
+        .block-container {
+            padding-left: 10rem !important;
+            padding-right: 10rem !important;
+            padding-bottom: 0rem !important;
+            padding-top: 1rem !important;
+        }
+
+        /* Remove default Streamlit header padding and add side margins */
+        .appview-container .main .block-container {
+            padding-top: 0rem;
+            padding-right: 5rem;
+            padding-left: 5rem;
+            padding-bottom: 1rem;
+        }
+
+        /* Hide Streamlit's default header */
+        header[data-testid="stHeader"] {
+            display: none;
+        }
+
+        /* Adjust top section padding */
+        section[data-testid="stSidebar"] > div {
+            padding-top: 0rem;
+        }
+
+        section.main > div:first-child {
+            padding-top: 0rem;
+            padding-right: 5rem;
+            padding-left: 5rem;
         }
         </style>
         
-        <div class="main-content">
-            <h1 class="rainbow-text">Dose Gradient Curve Analyzer</h1>
+        <div class="sticky-header">
+            <h1 class="title-text">Dose Gradient Curve Analyzer</h1>
         </div>
+        
+        <div class="main-content">
     """, unsafe_allow_html=True)
     
 def get_user_inputs():
@@ -619,11 +665,11 @@ def create_dgi_plots(dgi_parameters, xidx, prescript, dtick, unit, dunit, dose_d
     # Create interpolated parameters
     dgi_parameters_new = interpolate_dgi_parameters(dgi_parameters)
     
-    # Create dDGI plot and get max_x
-    fig_ddgi, max_x = create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit)
+    # Create dDGI plot and get max_x and min_dDGI_x
+    fig_ddgi, max_x, min_dDGI_x = create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit)
     
-    # Create cDGI plot with max_x
-    fig_cdgi = create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript, max_x)
+    # Create cDGI plot with max_x and min_dDGI_x
+    fig_cdgi = create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript, max_x, min_dDGI_x)
     
     # Add DVH if structure file exists
     if rtss and rtdose and RTstructures and structure_name_to_id and selected_structure_names:
@@ -658,7 +704,7 @@ def interpolate_dgi_parameters(dgi_parameters):
     })
 
 def create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit):
-    """Create dDGI plot"""
+    """Create dDGI plot and return min dDGI x-value"""
     x_dgi = dgi_parameters_new[xidx]
     y_dgi = dgi_parameters_new['dDGI']
     
@@ -668,26 +714,24 @@ def create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit):
     xout, yout, wout = loess_1d(x_dgi.values, y_dgi.values, frac=.2)
     fig.add_trace(go.Scatter(x=xout, y=yout, mode='lines', marker=dict(color='lightskyblue'), name='Regression'))
 
-    # Add minimum dDGI point
+    # Find minimum dDGI point
     range_around_prescript = 0.1 * prescript
     nearby_points = dgi_parameters_new[
         (x_dgi >= prescript - range_around_prescript) & 
         (x_dgi <= prescript + range_around_prescript)
     ]
 
+    min_dDGI_x = None
     if not nearby_points.empty:
         min_dDGI = nearby_points["dDGI"].min()
         min_dDGI_idx = nearby_points["dDGI"].idxmin()
-        min_dDGI_point = nearby_points[xidx].loc[min_dDGI_idx]  
+        min_dDGI_x = nearby_points[xidx].loc[min_dDGI_idx]  
         fig.add_trace(go.Scatter(
-            x=[min_dDGI_point],
+            x=[min_dDGI_x],
             y=[min_dDGI],
-            mode='markers+text',
+            mode='markers',
             name='Min dDGI',
-            marker=dict(color='red'),
-            text=["Min dDGI"],
-            textposition="top center",
-            textfont=dict(size=14, color='gray')
+            marker=dict(color='red', size=7),
         ))
 
     max_dDGI = round(y_dgi.max()+4,-1)
@@ -717,7 +761,7 @@ def create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit):
             showgrid=True,
             title_font=dict(size=18, family="Arial Black", color="black"),
             tickfont=dict(size=14, family="Arial Black", color="black"),
-            range=[0, max_x * 1.05]  # Set x-axis range
+            range=[0, max_x * 1.05]
         ),
         font=dict(family="Arial Black", size=18, color="black"),
         legend=dict(
@@ -733,10 +777,10 @@ def create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit):
         showlegend=True
     )
     
-    return fig, max_x  # Return both figure and max_x
+    return fig, max_x, min_dDGI_x  # Return min_dDGI_x along with other values
 
-def create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript, max_x=None):  # Add max_x parameter
-    """Create cDGI plot"""
+def create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript, max_x=None, min_dDGI_x=None):
+    """Create cDGI plot using min_dDGI_x from dDGI plot"""
     fig = go.Figure()
     
     # Filter out any infinite or NaN values and reset index
@@ -775,6 +819,20 @@ def create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript, max_x=Non
     if max_x is None:
         max_x = x_data.max() if len(x_data) > 0 else 100
 
+    # Add minimum dDGI point using x-value from dDGI plot
+    if min_dDGI_x is not None:
+        closest_idx = (dgi_parameters_new[xidx] - min_dDGI_x).abs().idxmin()
+        min_point_cDGI = dgi_parameters_new['cDGI'].loc[closest_idx]
+        
+        fig.add_trace(go.Scatter(
+            x=[min_dDGI_x],
+            y=[min_point_cDGI],
+            mode='markers',
+            name='Min dDGI',
+            marker=dict(color='red', size=7),
+            yaxis='y2'
+        ))
+
     # Update layout
     fig.update_layout(
         title={
@@ -812,7 +870,7 @@ def create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript, max_x=Non
             showgrid=True,
             title_font=dict(size=18, family="Arial Black", color="black"),
             tickfont=dict(size=14, family="Arial Black", color="black"),
-            range=[0, max_x * 1.05]  # Use provided max_x
+            range=[0, max_x * 1.05]
         ),
         font=dict(family="Arial Black", size=18, color="black"),
         legend=dict(
