@@ -306,8 +306,8 @@ def cal_dvh(fig, rtss, rtdose, RTstructures, structure_name_to_id, selected_stru
     return fig
     
 
-def setup_page_style():
-    """Setup initial page styling and header"""
+def main():
+    # ------------------------ [ UI ] -----------------------------
     st.markdown("""
         <style>
         .rainbow-text {
@@ -318,359 +318,253 @@ def setup_page_style():
             -webkit-background-clip: text;
 
             text-shadow: 
-                3px 3px 0px rgba(0, 0, 0, 0.2),
-                6px 6px 0px rgba(0, 0, 0, 0.15),
-                9px 9px 0px rgba(0, 0, 0, 0.1),
-                12px 12px 0px rgba(0, 0, 0, 0.05);
+                3px 3px 0px rgba(0, 0, 0, 0.2), /* Close shadow */
+                6px 6px 0px rgba(0, 0, 0, 0.15), /* Slightly farther */
+                9px 9px 0px rgba(0, 0, 0, 0.1), /* Even farther shadow */
+                12px 12px 0px rgba(0, 0, 0, 0.05); /* Final faint shadow */
         }
         </style>
         <h1 class="rainbow-text">Dose Gradient Curve Analyzer</h1>
     """, unsafe_allow_html=True)
-
-def get_user_inputs():
-    """Get all user inputs from sidebar"""
+    
+    # Inputs
+    st.sidebar.header("Upload DICOM Files")
     uploaded_file = st.sidebar.file_uploader("Upload RT Dose (dose.dcm)", type=["dcm"])
     uploaded_structure_file = st.sidebar.file_uploader("Upload RT Structure (rts.dcm) (Optional)", type=["dcm"])
     
     prescript_dose = st.sidebar.number_input('Prescription Dose (Gy)', min_value=0.0, value=40.0, format="%.2f")
     min_dose = st.sidebar.number_input('Minimum Dose (Gy)', min_value=0.1, value=0.1, step=0.1, format="%.2f")
     step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
+    unit = ' (Gy)'
+    step = 0.1; fmt = '%.2f'
     
-    step = 0.1
-    fmt = '%.2f'
+    # if step_type == 'Absolute (Gy)': step = 0.01; fmt = '%.2f'
     step_size = round(st.sidebar.number_input('Step Size', min_value=step, max_value=9.0, value=1.0, step=step, format=fmt,label_visibility="collapsed"),3)
     
-    return uploaded_file, uploaded_structure_file, prescript_dose, min_dose, step_type, step_size
+    if step_type == 'Relative (%)':
+        step_size = round(prescript_dose*step_size*0.01,3)
+        unit = ''
 
-def process_dicom_files(uploaded_file, uploaded_structure_file):
-    """Process uploaded DICOM files and return required objects"""
+    if step_type == 'Absolute (Gy)':
+        xidx = 'Dose'
+        prescript = prescript_dose
+        dunit = 100
+        dtick = 2
+    elif step_type == 'Relative (%)':
+        xidx = 'Dose (%)'
+        prescript = 100
+        dunit = prescript_dose
+        dtick = 5
+
+    # Use the default file if no file is uploaded
     dicom_file = 'dose.dcm'
     if uploaded_file:
         dicom_file = uploaded_file.name
         with open(dicom_file, "wb") as f:
             f.write(uploaded_file.getbuffer())
             
-    rtdose_file = pydicom.dcmread(dicom_file, force=True)
-    if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
-        rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
-    rtdose = dicomparser.DicomParser(rtdose_file)
+    if dicom_file:
+        rtdose_file = pydicom.dcmread(dicom_file, force=True)
+        if not hasattr(rtdose_file.file_meta, 'TransferSyntaxUID'):
+            rtdose_file.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+        rtdose = dicomparser.DicomParser(rtdose_file)
 
-    structure_file = None
-    rtss = None
-    RTstructures = None
-    structure_name_to_id = None
-    
+    structure_file = 'rts.dcm'
     if uploaded_structure_file:
         structure_file = uploaded_structure_file.name
         with open(structure_file, "wb") as f:
             f.write(uploaded_structure_file.getbuffer())
-        
+
+    if structure_file:
         rtss_file = pydicom.dcmread(structure_file, force=True)
+
+        # Check SOP Instance UID or Study Instance UID to ensure the files belong to the same study
         if hasattr(rtss_file, 'StudyInstanceUID') and hasattr(rtdose_file, 'StudyInstanceUID'):
-            if rtss_file.StudyInstanceUID == rtdose_file.StudyInstanceUID:
+            if rtss_file.StudyInstanceUID != rtdose_file.StudyInstanceUID:
+                structure_file = None
+            else:
                 rtss = dicomparser.DicomParser(rtss_file)
                 RTstructures = rtss.GetStructures()
-                structure_name_to_id = {structure['name']: key for key, structure in RTstructures.items()}
-    
-    return dicom_file, rtdose, rtss, RTstructures, structure_name_to_id
-
-def setup_plot_parameters(step_type, prescript_dose):
-    """Setup plotting parameters based on step type"""
-    unit = ' (Gy)' if step_type == 'Absolute (Gy)' else ''
-    
-    if step_type == 'Absolute (Gy)':
-        xidx = 'Dose'
-        prescript = prescript_dose
-        dunit = 100
-        dtick = 2
-    else:
-        xidx = 'Dose (%)'
-        prescript = 100
-        dunit = prescript_dose
-        dtick = 5
         
-    return unit, xidx, prescript, dunit, dtick
+                # Create a dictionary mapping structure names to structure IDs
+                structure_name_to_id = {structure['name']: key for key, structure in RTstructures.items()}
 
-def create_dgi_plots(dgi_parameters, xidx, prescript, dtick, unit, rtss=None, rtdose=None, RTstructures=None, structure_name_to_id=None, selected_structure_names=None):
-    """Create and return dDGI and cDGI plots"""
-    # Create interpolated parameters
-    dgi_parameters_new = interpolate_dgi_parameters(dgi_parameters)
-    
-    # Create dDGI plot
-    fig_ddgi = create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit)
-    
-    # Create cDGI plot
-    fig_cdgi = create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript)
-    
-    # Add DVH if structure file exists
-    if rtss and rtdose and RTstructures and structure_name_to_id and selected_structure_names:
-        fig_cdgi = cal_dvh(fig_cdgi, rtss, rtdose, RTstructures, structure_name_to_id, selected_structure_names, unit)
-    
-    return fig_ddgi, fig_cdgi
-
-def interpolate_dgi_parameters(dgi_parameters):
-    """Create interpolated DGI parameters"""
-    # Create new dose points with interval of 1
-    dose_new = np.arange(np.floor(dgi_parameters['Dose'].min()), 
-                        np.ceil(dgi_parameters['Dose'].max()) + 1, 1)
-    
-    # Interpolate all columns
-    dose_pct_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Dose (%)']))
-    area_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Area']))
-    volume_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Volume']))
-    ddgi_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['dDGI']))
-    cdgi_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['cDGI']))
-
-    return pd.DataFrame({
-        'Dose': np.flip(dose_new),
-        'Dose (%)': np.flip(dose_pct_new),
-        'Area': np.flip(area_new),
-        'Volume': np.flip(volume_new),
-        'dDGI': np.flip(ddgi_new),
-        'cDGI': np.flip(cdgi_new)
-    })
-
-def create_ddgi_plot(dgi_parameters_new, xidx, prescript, dtick, unit):
-    """Create dDGI plot"""
-    x_dgi = dgi_parameters_new[xidx]
-    y_dgi = dgi_parameters_new['dDGI']
-    
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_dgi, y=y_dgi, mode='markers', marker=dict(color='royalblue'), name='dDGI'))
-    
-    xout, yout, wout = loess_1d(x_dgi.values, y_dgi.values, frac=.2)
-    fig.add_trace(go.Scatter(x=xout, y=yout, mode='lines', marker=dict(color='lightskyblue'), name='Regression'))
-    
-    # Add minimum dDGI point
-    range_around_prescript = 0.1 * prescript
-    nearby_points = dgi_parameters_new[
-        (x_dgi >= prescript - range_around_prescript) & 
-        (x_dgi <= prescript + range_around_prescript)
-    ]
-    
-    if not nearby_points.empty:
-        min_dDGI = nearby_points["dDGI"].min()
-        min_dDGI_idx = nearby_points["dDGI"].idxmin()
-        min_dDGI_point = nearby_points[xidx].loc[min_dDGI_idx]
-        fig.add_trace(go.Scatter(
-            x=[min_dDGI_point],
-            y=[min_dDGI],
-            mode='markers+text',
-            name='Min dDGI',
-            marker=dict(color='red'),
-            text=["Min dDGI"],
-            textposition="top center",
-            textfont=dict(size=14, color='gray')
-        ))
-    
-    max_dDGI = round(y_dgi.max()+4,-1)
-    
-    # Update layout
-    fig.update_layout(
-        title={
-            'text': f'dDGI <i>vs</i> {xidx}',
-            'font': dict(size=22, family="Arial Black", color="black"),
-        },
-        xaxis_title=xidx + unit,
-        yaxis=dict(
-            title='DGI (mm)',
-            tickmode='linear',
-            side='left',
-            dtick=max_dDGI / 4,
-            range=[0, max_dDGI * 1.05],
-            showgrid=True,
-            title_font=dict(size=18, family="Arial Black", color="black"),
-            tickfont=dict(size=14, family="Arial Black", color="black")
-        ),
-        xaxis=dict(
-            tickmode='linear',
-            tick0=0,
-            dtick=dtick,
-            showgrid=True,
-            title_font=dict(size=18, family="Arial Black", color="black"),
-            tickfont=dict(size=14, family="Arial Black", color="black")
-        ),
-        font=dict(family="Arial Black", size=18, color="black"),
-        legend=dict(
-            x=1.08,
-            y=1,
-            xanchor='left',
-            yanchor='top',
-            font=dict(size=12),
-            # Add these properties to match cDGI legend style
-            bgcolor='rgba(255, 255, 255, 0.7)',
-            bordercolor='rgba(0, 0, 0, 0.3)',
-            borderwidth=1
-        ),
-        showlegend=True  # Explicitly show legend
-    )
-    
-    return fig
-
-def create_cdgi_plot(dgi_parameters_new, xidx, dtick, unit, prescript):
-    """Create cDGI plot"""
-    fig = go.Figure()
-    
-    dgi_parameters_new = dgi_parameters_new.dropna()
-    x_dgi = dgi_parameters_new[xidx]
-    
-    # Add cDGI scatter plot
-    fig.add_trace(go.Scatter(
-        x=x_dgi,
-        y=dgi_parameters_new["cDGI"],
-        mode='markers',
-        marker=dict(color='royalblue'),
-        name='cDGI',
-        yaxis='y2'
-    ))
-    
-    # Add regression line
-    xout, yout, wout = loess_1d(x_dgi.values, dgi_parameters_new["cDGI"].values, frac=.2)
-    fig.add_trace(go.Scatter(
-        x=xout,
-        y=yout,
-        mode='lines',
-        marker=dict(color='lightskyblue'),
-        name='Regression',
-        yaxis='y2'
-    ))
-    
-    # Add minimum dDGI point
-    range_around_prescript = 0.1 * prescript
-    nearby_points = dgi_parameters_new[
-        (x_dgi >= prescript - range_around_prescript) & 
-        (x_dgi <= prescript + range_around_prescript)
-    ]
-    
-    if not nearby_points.empty:
-        min_dDGI = nearby_points["dDGI"].min()
-        min_dDGI_idx = nearby_points["dDGI"].idxmin()
-        min_dDGI_point = nearby_points[xidx].loc[min_dDGI_idx]
-        min_cDGI_point = nearby_points["cDGI"].loc[min_dDGI_idx]
-        fig.add_trace(go.Scatter(
-            x=[min_dDGI_point],
-            y=[min_cDGI_point],
-            mode='markers+text',
-            name='Min dDGI',
-            marker=dict(color='red'),
-            text=["Min dDGI"],
-            textposition="top center",
-            textfont=dict(size=14, color='gray'),
-            yaxis='y2'
-        ))
-    
-    max_cdgi = round(dgi_parameters_new["cDGI"].max()+4,-1)
-    
-    # Update layout
-    fig.update_layout(
-        title={
-            'text': f'cDGI <i>vs</i> {xidx}',
-            'font': dict(size=22, family="Arial Black", color="black"),
-        },
-        xaxis_title=xidx + unit,
-        yaxis=dict(
-            title='Relative Volume (%)',
-            tickmode='linear',
-            side='right',
-            dtick=25,
-            range=[0, 100 * 1.05],
-            showgrid=True,
-            title_font=dict(size=18, family="Arial Black", color="black"),
-            tickfont=dict(size=14, family="Arial Black", color="black")
-        ),
-        yaxis2=dict(
-            title='DGI (mm)',
-            side='left',
-            overlaying='y',
-            tickmode='linear',
-            dtick=max_cdgi / 4,
-            range=[0, max_cdgi * 1.05],
-            showgrid=False,
-            title_font=dict(size=18, family="Arial Black", color="black"),
-            tickfont=dict(size=14, family="Arial Black", color="black")
-        ),
-        xaxis=dict(
-            tickmode='linear',
-            tick0=0,
-            dtick=dtick,
-            showgrid=True,
-            title_font=dict(size=18, family="Arial Black", color="black"),
-            tickfont=dict(size=14, family="Arial Black", color="black")
-        ),
-        font=dict(family="Arial Black", size=18, color="black"),
-        legend=dict(
-            x=1.08,
-            y=1,
-            xanchor='left',
-            yanchor='top',
-            font=dict(size=12),
-            # Add these properties to ensure legend is visible
-            bgcolor='rgba(255, 255, 255, 0.7)',
-            bordercolor='rgba(0, 0, 0, 0.3)',
-            borderwidth=1
-        ),
-        showlegend=True  # Explicitly show legend
-    )
-    
-    return fig
-
-def main():
-    setup_page_style()
-    
-    # Get user inputs
-    uploaded_file, uploaded_structure_file, prescript_dose, min_dose, step_type, step_size = get_user_inputs()
-    
-    # Process DICOM files
-    dicom_file, rtdose, rtss, RTstructures, structure_name_to_id = process_dicom_files(uploaded_file, uploaded_structure_file)
-    
-    # Get structure selections if available
-    selected_structure_names = []
-    if structure_name_to_id:
-        selected_structure_names = st.sidebar.multiselect(
-            "Select Structures for DVH Calculation", 
-            list(structure_name_to_id.keys())
-        )
-    
-    # Setup plot parameters
-    unit, xidx, prescript, dunit, dtick = setup_plot_parameters(step_type, prescript_dose)
-    
-    if step_type == 'Relative (%)':
-        step_size = round(prescript_dose * step_size * 0.01, 3)
-    
+                # Using multiselect for selecting multiple structures by name
+                selected_structure_names = st.sidebar.multiselect(
+                    "Select Structures for DVH Calculation", list(structure_name_to_id.keys())
+                )
+        else:
+            structure_file = None
+        
     if st.sidebar.button('Process'):
+        fig_cdgi = go.Figure()
+        if structure_file:
+            fig_cdgi = cal_dvh(fig_cdgi, rtss, rtdose, RTstructures, structure_name_to_id, selected_structure_names, dunit)
+        
         try:
-            # Process dose data
             dose_data, ipp, pixel_spacing, grid_frame_offset_vector = read_dose_dicom(dicom_file)
-            
-            # Validate prescription dose
             min_dose_value = np.min(dose_data)
             max_dose_value = np.max(dose_data)
             
             if prescript_dose < min_dose_value or prescript_dose > max_dose_value:
                 st.error(f"Prescription dose should be between {min_dose_value} and {max_dose_value}.")
-                return
+            else:
+                dose_coordinates = extract_dose_coordinates_parallel(dose_data, ipp, pixel_spacing, grid_frame_offset_vector, prescript_dose, min_dose, step_size, step_type)
+                dgi_parameters = calculate_dgi(dose_coordinates, min_dose, prescript_dose, step_size, step_type)
+
+                # Save CSV file
+                st.sidebar.markdown(get_table_download_link(dgi_parameters), unsafe_allow_html=True)
+
+                # Create new dose points with interval of 1
+                dose_new = np.arange(np.floor(dgi_parameters['Dose'].min()), 
+                                   np.ceil(dgi_parameters['Dose'].max()) + 1, 1)
                 
-            # Calculate DGI parameters
-            dose_coordinates = extract_dose_coordinates_parallel(
-                dose_data, ipp, pixel_spacing, grid_frame_offset_vector, 
-                prescript_dose, min_dose, step_size, step_type
-            )
-            dgi_parameters = calculate_dgi(
-                dose_coordinates, min_dose, prescript_dose, step_size, step_type
-            )
-            
-            # Add download link
-            st.sidebar.markdown(get_table_download_link(dgi_parameters), unsafe_allow_html=True)
-            
-            # Create and display plots
-            fig_ddgi, fig_cdgi = create_dgi_plots(
-                dgi_parameters, xidx, prescript, dtick, unit,
-                rtss, rtdose, RTstructures, structure_name_to_id, selected_structure_names
-            )
-            
-            st.plotly_chart(fig_ddgi)
-            st.plotly_chart(fig_cdgi)
-            
+                # Interpolate all columns
+                dose_pct_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Dose (%)']))
+                area_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Area']))
+                volume_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['Volume']))
+                ddgi_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['dDGI']))
+                cdgi_new = np.interp(dose_new, np.flip(dgi_parameters['Dose']), np.flip(dgi_parameters['cDGI']))
+
+                # Create new DataFrame with interpolated values
+                dgi_parameters_new = pd.DataFrame({
+                    'Dose': np.flip(dose_new),  # 다시 내림차순으로
+                    'Dose (%)': np.flip(dose_pct_new),
+                    'Area': np.flip(area_new),
+                    'Volume': np.flip(volume_new),
+                    'dDGI': np.flip(ddgi_new),
+                    'cDGI': np.flip(cdgi_new)
+                })
+
+                # 이후 plotting 등에서는 dgi_parameters_new를 사용
+                x_dgi = dgi_parameters_new['Dose']
+                y_dgi = dgi_parameters_new['dDGI']
+                
+                fig_ddgi = go.Figure()
+                fig_ddgi.add_trace(go.Scatter(x=x_dgi, y=y_dgi, mode='markers', marker=dict(color='royalblue'), name='dDGI'))
+              
+                #xout, yout, wout = loess_1d(x_dgi.values, y_dgi.values, frac=.2)
+                xout, yout, wout = loess_1d(x_dgi.values, y_dgi.values, frac=.2)
+
+                fig_ddgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', marker=dict(color='lightskyblue'), name='Regression'))
+                
+                # Find the minimum dDGI near the prescription dose 10% range around the prescription dose
+                range_around_prescript = 0.1 * prescript
+                nearby_points = dgi_parameters_new[
+                    (x_dgi >= prescript - range_around_prescript) & 
+                    (x_dgi <= prescript + range_around_prescript)
+                ]
+
+                if not nearby_points.empty:
+                    min_dDGI = nearby_points["dDGI"].min()
+                    min_dDGI_idx = nearby_points["dDGI"].idxmin()
+                    min_dDGI_point = nearby_points[xidx].loc[min_dDGI_idx]  
+                    fig_ddgi.add_trace(go.Scatter(x=[min_dDGI_point], y=[min_dDGI], mode='markers+text', name='Min dDGI',
+                                                  marker=dict(color='red'),
+                                                  text=["Min dDGI"], textposition="top center", textfont=dict(size=14, color='gray')))
+
+                max_dDGI = round(y_dgi.max()+4,-1)
+                
+                # Update layout for fig_ddgi
+                fig_ddgi.update_layout(
+                    title={
+                        'text': f'dDGI <i>vs</i> {xidx}',
+                        'font': dict(size=22, family="Arial Black", color="black"),  # Set larger title font
+                        # 'x': 0.5  # Center align the title (optional)
+                    },
+                    xaxis_title=xidx + unit,
+                    yaxis=dict(
+                        title='DGI (mm)',
+                        tickmode='linear',
+                        side='left',
+                        dtick=max_dDGI / 4,
+                        range=[0, max_dDGI * 1.05],
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label with bold font family
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels with bold font family
+                    ),
+                    xaxis=dict(
+                        tickmode='linear',
+                        tick0=0,
+                        dtick=dtick,
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label with bold font family
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels with bold font family
+                    ),
+                    font=dict(family="Arial Black", size=18, color="black"),
+                    legend=dict(x=1.08, y=1,
+                                xanchor='left', yanchor='top',
+                                font=dict(size=12))
+                )
+
+                st.plotly_chart(fig_ddgi)
+
+                # Plot cDGI
+                dgi_parameters_new = dgi_parameters_new.dropna()
+                # fig_cdgi = go.Figure()
+                fig_cdgi.add_trace(go.Scatter(x=dgi_parameters_new[xidx], y=dgi_parameters_new["cDGI"],
+                                              mode='markers', marker=dict(color='royalblue'),
+                                              name='cDGI', yaxis='y2')
+                                   )
+
+                max_cdgi = round(dgi_parameters_new["cDGI"].max()+4,-1)
+
+                # Update layout for fig_cdgi
+                fig_cdgi.update_layout(
+                    title={
+                        'text': f'cDGI <i>vs</i> {xidx}',
+                        'font': dict(size=22, family="Arial Black", color="black"),  # Set larger title font
+                        # 'x': 0.5  # Center align the title (optional)
+                    },
+                    xaxis_title=xidx + unit,
+                    yaxis=dict(
+                        title='Relative Volume (%)',
+                        tickmode='linear',
+                        side='right',
+                        dtick=25,
+                        range=[0, 100 * 1.05],
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels
+                    ),
+                    yaxis2=dict(
+                        title='DGI (mm)',
+                        side='left',
+                        overlaying='y',
+                        tickmode='linear',
+                        dtick=max_cdgi / 4,
+                        range=[0, max_cdgi * 1.05],
+                        showgrid=False,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label
+                        tickfont=dict(size=14, family="Arial Black", color="black")# Bold tick labels
+                    ),
+                    xaxis=dict(
+                        tickmode='linear',
+                        tick0=0,
+                        dtick=dtick,
+                        showgrid=True,
+                        title_font=dict(size=18, family="Arial Black", color="black"),  # Bold axis label
+                        tickfont=dict(size=14, family="Arial Black", color="black")  # Bold tick labels
+                    ),
+                    font=dict(family="Arial Black", size=18, color="black"),
+                    legend=dict(
+                        x=1.08,
+                        y=1,
+                        xanchor='left',
+                        yanchor='top',
+                        font=dict(size=12)
+                    )
+                )                
+                xout, yout, wout = loess_1d(dgi_parameters_new[xidx].values, dgi_parameters_new["cDGI"].values, frac=.2)
+                fig_cdgi.add_trace(go.Scatter(x=xout, y=yout, mode='lines', name='Regression', marker=dict(color='lightskyblue'), yaxis='y2'))
+                
+                min_dDGI_on_cDGI = nearby_points['cDGI'].loc[min_dDGI_idx]
+                fig_cdgi.add_trace(go.Scatter(x=[min_dDGI_point], y=[min_dDGI_on_cDGI],
+                                              mode='markers+text', name='Min dDGI',
+                                              marker=dict(color='red'), text=["Min dDGI"], textposition="top center", textfont=dict(size=14, color="gray"),yaxis='y2')
+                                   )
+                
+                st.plotly_chart(fig_cdgi)
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
