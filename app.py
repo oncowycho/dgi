@@ -317,15 +317,32 @@ def setup_page_style():
             font-size: 48px;
             background: linear-gradient(to right, red, orange, yellow, green, blue);
             -webkit-background-clip: text;
-
             text-shadow: 
                 3px 3px 0px rgba(0, 0, 0, 0.2),
                 6px 6px 0px rgba(0, 0, 0, 0.15),
                 9px 9px 0px rgba(0, 0, 0, 0.1),
                 12px 12px 0px rgba(0, 0, 0, 0.05);
         }
+
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: #f0f2f6;
+            padding: 10px;
+            text-align: center;
+            z-index: 999;
+        }
+
+        .main-content {
+            margin-bottom: 50px;  /* Add space for footer */
+        }
         </style>
-        <h1 class="rainbow-text">Dose Gradient Curve Analyzer</h1>
+        
+        <div class="main-content">
+            <h1 class="rainbow-text">Dose Gradient Curve Analyzer</h1>
+        </div>
     """, unsafe_allow_html=True)
     
 def get_user_inputs():
@@ -333,6 +350,8 @@ def get_user_inputs():
     uploaded_file = st.sidebar.file_uploader("Upload RT Dose (dose.dcm)", type=["dcm"])
     uploaded_structure_file = st.sidebar.file_uploader("Upload RT Structure (rts.dcm) (Optional)", type=["dcm"])
     
+    show_isodose = st.sidebar.toggle('Show Isodose View', value=False)
+
     prescript_dose = st.sidebar.number_input('Prescription Dose (Gy)', min_value=0.0, value=40.0, format="%.2f")
     min_dose = st.sidebar.number_input('Minimum Dose (Gy)', min_value=0.1, value=0.1, step=0.1, format="%.2f")
     step_type = st.sidebar.radio('Dose step size',['Absolute (Gy)', 'Relative (%)'], horizontal=True)
@@ -371,8 +390,6 @@ def get_user_inputs():
         st.session_state.prev_step_type = step_type
         st.session_state.prev_prescript_dose = prescript_dose
         st.session_state.prev_min_dose = min_dose
-
-    show_isodose = st.sidebar.toggle('Show Isodose View', value=False)
 
     return uploaded_file, uploaded_structure_file, prescript_dose, min_dose, step_type, step_size, show_isodose
 
@@ -493,7 +510,12 @@ def create_2d_isodose_plot(dose_data, ipp, pixel_spacing, grid_frame_offset_vect
                 text='Dose (Gy)',
                 font=dict(size=14, family="Arial Black")
             ),
-            tickfont=dict(size=12, family="Arial Black")
+            tickfont=dict(size=12, family="Arial Black"),
+            x=1.02,  # Position colorbar closer to plot
+            y=1,     # Align with top
+            yanchor='top',  # Anchor to top
+            len=1,   # Full length
+            thickness=20    # Adjust thickness of colorbar
         ),
         hoverongaps=False,
         hovertemplate='X: %{x:.1f}<br>Y: %{y:.1f}<br>Dose: %{z:.1f} Gy<extra></extra>'
@@ -532,6 +554,9 @@ def create_2d_isodose_plot(dose_data, ipp, pixel_spacing, grid_frame_offset_vect
         title={
             'text': f'Isodose View (Z = {z_coord:.1f} mm)',
             'font': dict(size=22, family="Arial Black", color="black"),
+            'y': 0.98,  # Move title up
+            'yanchor': 'top',  # Anchor title to top
+            'pad': dict(t=0)  # Remove padding above title
         },
         xaxis_title='X (mm)',
         yaxis_title='Y (mm)',
@@ -547,7 +572,7 @@ def create_2d_isodose_plot(dose_data, ipp, pixel_spacing, grid_frame_offset_vect
         ),
         font=dict(family="Arial Black", size=18, color="black"),
         legend=dict(
-            x=1.08,
+            x=1.12,
             y=1,
             xanchor='left',
             yanchor='top',
@@ -558,7 +583,15 @@ def create_2d_isodose_plot(dose_data, ipp, pixel_spacing, grid_frame_offset_vect
         ),
         showlegend=True,
         width=800,
-        height=800
+        height=800,
+        margin=dict(
+            l=80,    # Left margin
+            r=150,   # Right margin
+            t=50,    # Reduced top margin
+            b=80,    # Bottom margin
+            pad=0    # Remove padding
+        ),
+        plot_bgcolor='white'
     )
     
     # Display the plot
@@ -889,6 +922,14 @@ def main():
         except Exception as e:
             st.error(f"An error occurred: {e}")
             st.session_state.processed_data = None  # Clear stored data on error
+
+    # Add footer at the end
+    st.markdown("""
+        <div class="footer">
+            © 2024 Wonyoung Cho. All rights reserved. | Contact: 
+            <a href="mailto:wycho@oncosoft.io">wycho@oncosoft.io</a>
+        </div>
+    """, unsafe_allow_html=True)
 
 
 if __name__ == '__main__':
