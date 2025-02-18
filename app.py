@@ -29,24 +29,7 @@ st.markdown(f"""
         visibility: hidden;
         height: 0px;
     }}
-    /* Add a footer */
-    .footer {{
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: #f1f1f1;
-        text-align: center;
-        padding: 10px 0;
-        font-size: 14px;
-        color: #333;
-    }}
     </style>
-    <div class="footer">
-        © 2024 Wonyoung Cho. All rights reserved. |
-        Contact: <a href="mailto:wycho@oncosoft.io" style="text-decoration: none; color: DodgerBlue;">
-        wycho@oncosoft.io</a>
-    </div>
 """, unsafe_allow_html=True)
 
 
@@ -312,7 +295,6 @@ def setup_page_style():
     st.markdown("""
         <style>
         .sticky-header {
-            position: fixed;
             top: 0;
             left: 0;
             background-color: white;
@@ -326,12 +308,11 @@ def setup_page_style():
             text-align: center;
             margin: 0;
             padding: 0;
-            font-size: 48px;
+            font-size: 42px;  /* Reduced from 48px */
+            font-weight: normal;  /* Explicitly set font weight */
             color: black;
-            font-family: "Arial Black", sans-serif;
-            text-shadow: 
-                2px 2px 4px rgba(0, 0, 0, 0.2),  /* Main shadow */
-                4px 4px 8px rgba(0, 0, 0, 0.1);  /* Deeper shadow */
+            font-family: "Arial Black", sans-serif;  /* Changed from "Arial Black" */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .footer {
@@ -339,10 +320,12 @@ def setup_page_style():
             left: 0;
             bottom: 0;
             width: 100%;
-            background-color: #f0f2f6;
+            background-color: #f1f1f1;
             padding: 10px;
             text-align: center;
             z-index: 999;
+            font-size: 14px;
+            color: #333;
         }
 
         .main-content {
@@ -387,7 +370,11 @@ def setup_page_style():
         <div class="sticky-header">
             <h1 class="title-text">Dose Gradient Curve Analyzer</h1>
         </div>
-        
+        <div class="footer">
+            © 2024 Wonyoung Cho. All rights reserved. |
+            Contact: <a href="mailto:wycho@oncosoft.io" style="text-decoration: none; color: DodgerBlue;">
+            wycho@oncosoft.io</a>
+        </div>  
         <div class="main-content">
     """, unsafe_allow_html=True)
     
@@ -595,14 +582,14 @@ def create_2d_isodose_plot(dose_data, ipp, pixel_spacing, grid_frame_offset_vect
             hoverinfo='skip'
         ))
     
-    # Update layout
+    # Update layout with fixed dimensions and no auto-sizing
     fig.update_layout(
         title={
             'text': f'Isodose View (Z = {z_coord:.1f} mm)',
             'font': dict(size=22, family="Arial Black", color="black"),
-            'y': 0.98,  # Move title up
-            'yanchor': 'top',  # Anchor title to top
-            'pad': dict(t=0)  # Remove padding above title
+            'y': 0.98,
+            'yanchor': 'top',
+            'pad': dict(t=0)
         },
         xaxis_title='X (mm)',
         yaxis_title='Y (mm)',
@@ -628,21 +615,22 @@ def create_2d_isodose_plot(dose_data, ipp, pixel_spacing, grid_frame_offset_vect
             borderwidth=1
         ),
         showlegend=True,
-        width=800,
-        height=800,
+        width=800,         # Fixed width
+        height=800,        # Fixed height
         margin=dict(
             l=80,    # Left margin
             r=150,   # Right margin
-            t=50,    # Reduced top margin
-            b=80,    # Bottom margin
-            pad=0    # Remove padding
+            t=50,    # Top margin
+            b=80     # Bottom margin
         ),
-        plot_bgcolor='white'
+        plot_bgcolor='white',
+        autosize=False    # Disable autosize
     )
     
-    # Display the plot
-    st.plotly_chart(fig)
-
+    st.plotly_chart(fig, use_container_width=True, config={
+        'displayModeBar': True,
+        'responsive': True    # Disable responsive resizing
+    })
     # Add JavaScript for keyboard controls
     st.markdown("""
         <script>
